@@ -1,0 +1,59 @@
+version: 2.1
+
+jobs:
+  compile:
+    docker:
+      - image: ubuntu:20.04
+    steps:
+      - checkout
+      - run:
+          name: Install arduino-cli
+          command: |
+            apt update
+            apt install -y curl
+            curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
+            export PATH=/root/project/bin
+            arduino-cli core install teensy:avr
+            arduino-cli core update-index
+      - run:
+          name: compile
+          command: |
+            export PATH=$PATH:/root/project/bin
+            arduino-cli compile -b teensy:avr:teensy41 --output-dir /root/project/compiled LinearMouseInterpolator
+      - persist_to_workspace:
+          root: .
+          paths: compiled
+  upload-nightly:
+    docker:
+      - image: ubuntu:20.04
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: install github cli
+          command: |
+            apt update
+            apt install -y curl
+            curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+            && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+            && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+            && apt update \
+            && apt install gh -y
+      - run:
+          name: zip it and ship it
+          command: |
+            export NEW_VERSION=$( \
+            curl -L https://github.com/MerzSebastian/LinearMouseInterpolator/releases/latest | \
+            grep -oP '(?<=releases/tag/).*?(?=" />)' | \
+            head -1 | \
+            awk -F. -v OFS=. '{$2 += 1 ; print}')
+            apt install -y zip
+            cd compiled && zip -r binaries.zip *
+            gh release create ${NEW_VERSION} binaries.zip --notes "Nightly version - potentially unstable"
+
+            
+workflows:
+  compile:
+    jobs:
+      - compile
