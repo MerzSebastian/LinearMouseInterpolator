@@ -13,8 +13,9 @@ jobs:
             apt install -y curl
             curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
             export PATH=/root/project/bin
-            arduino-cli core install teensy:avr
+            export ARDUINO_BOARD_MANAGER_ADDITIONAL_URLS="https://www.pjrc.com/teensy/td_156/package_teensy_index.json"
             arduino-cli core update-index
+            arduino-cli core install teensy:avr
       - run:
           name: compile
           command: |
