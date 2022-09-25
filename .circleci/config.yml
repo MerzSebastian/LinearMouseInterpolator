@@ -20,7 +20,7 @@ jobs:
           name: compile
           command: |
             export PATH=$PATH:/root/project/bin
-            arduino-cli compile -b teensy:avr:teensy41 --output-dir /root/project/compiled LinearMouseInterpolator
+            arduino-cli compile -b teensy:avr:teensy41 --output-dir /root/project/compiled arduino-lmi
       - persist_to_workspace:
           root: .
           paths: compiled
@@ -58,3 +58,6 @@ workflows:
   compile:
     jobs:
       - compile
+      - upload-nightly:
+          requires:
+            - compile
