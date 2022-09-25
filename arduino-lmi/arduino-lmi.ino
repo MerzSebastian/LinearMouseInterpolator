@@ -16,11 +16,8 @@ int8_t rx[RX_SIZE];
 bool debug = false;
 
 int movesPerMinute = 450;
-//this is buggy at the moment. needs a empty move in array.
-//int moves[13][2] = {{0,0}, {83, -116}, {144, -1}, {-70, -118}, {71, -117}, {-144, -3}, {-84, -116}, {-82, 115}, {-146, 2}, {72, 118}, {-74, 118}, {147, 2}, {82, 117}};
-//int moves[30][2] = {{0,0}, {0, -22}, {6, -12}, {7, -18}, {12, -18}, {12, -15}, {25, -18}, {19, -17}, {18, -19}, {22, -14}, {17, -10}, {25, -22}, {19, -11}, {25, -19}, {18, -19}, {25, -11}, {23, -18}, {16, -13}, {26, -19}, {16, -15}, {22, -13}, {24, -14}, {23, -18}, {21, -11}, {20, -13}, {20, -10}, {23, -13}, {24, -13}, {26, -14}, {19, -7}};
 int moves[29][2] = {{0,0}, {-7, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40}};
-float movesPerMilliseconds = round(1000 / (movesPerMinute / 60)); //why do i round ? precission ?
+float movesPerMilliseconds = round(1000 / (movesPerMinute / 60));
 bool mousePressed = false;
 bool shouldReset = true;
 bool shouldAnimate = true;
@@ -60,7 +57,7 @@ void loop()
     inputToHost();
     mouse.mouseDataClear();
   }
-  if (buttonPressed(Button::LeftRight)) // maybe Button::Right would be a better name ?
+  if (buttonPressed(Button::LeftRight))
   {
     if (shouldReset)
     {
@@ -80,7 +77,6 @@ void loop()
       struct intCoordinates currentMove = createIntCoordinates(moves[animationCounter][0], moves[animationCounter][1]);
       if (nextMove <= millis())
       {
-        //this is buggy at the moment. needs a empty move in array.
         if (animationCounter > 0)
         {
           struct intCoordinates adjustedMove = translateToCorrectDirection(createIntCoordinates((int)(abs(currentMove.x) - pixelsToMove.x), (int)(abs(currentMove.y) - pixelsToMove.y)), currentMove);
