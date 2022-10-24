@@ -30,12 +30,14 @@ unsigned long startTime = millis();
 unsigned long nextMove = millis();
 unsigned short animationTimes = sizeof(moves) / sizeof(moves[0]);
 unsigned short animationCounter = 0;
+unsigned short reverseX = 1;
+unsigned short reverseY = 1;
 struct intCoordinates lastProgression = createIntCoordinates(0, 0);
 struct intCoordinates pixelsToMove = createIntCoordinates(0, 0);
 struct floatCoordinates overAllRest = createFloatCoordinates(0, 0);
 
 bool buttonPressed(Button state) { return usb_mouse_buttons_state == static_cast<int>((int)state); }
-void moveMouse(struct intCoordinates cords) { usb_mouse_move(mouse.getMouseX() + cords.x*1, mouse.getMouseY() + cords.y*1, mouse.getWheel(), mouse.getWheelH()); }
+void moveMouse(struct intCoordinates cords) { usb_mouse_move(mouse.getMouseX() + cords.x*reverseX, mouse.getMouseY() + cords.y*reverseY, mouse.getWheel(), mouse.getWheelH()); }
 intCoordinates translateToCorrectDirection(intCoordinates move, intCoordinates originalMove) { return createIntCoordinates(originalMove.x > 0 ? move.x : move.x * -1, originalMove.y > 0 ? move.y : move.y * -1); }
 
 void inputToHost()
@@ -50,10 +52,11 @@ void log(String text) {
 
 //needs refactoring, should be possible in single for statement. works for now. types can be refactored as well.
 void parseConfig(String conf) {
-  //sample config: |1,2|3,4|5,6|450
-  int lastDelimiterIndex = 0;
+  //sample config: 1|1|1,2|3,4|5,6|450
+  int lastDelimiterIndex = 3;
   int delimiterCounter = 0;
-  for (unsigned int i = 1; i < conf.length(); i++)
+  log("conf: " + String(conf));
+  for (unsigned int i = 4; i < conf.length(); i++)
   {
     if (String(conf[i]) == "|")
     {
@@ -93,6 +96,10 @@ void parseConfig(String conf) {
       log("movesPerMinute " + String(movesPerMinute));
     }
   }
+  reverseX = String(conf[0]) == "1" ? 1 : -1;
+  reverseY = String(conf[2]) == "1" ? 1 : -1;
+  log("reverseX?: " + String(String(conf[0]) == "1" ? 1 : -1));
+  log("reverseY?: " + String(String(conf[2]) == "1" ? 1 : -1));
   
 }
 
