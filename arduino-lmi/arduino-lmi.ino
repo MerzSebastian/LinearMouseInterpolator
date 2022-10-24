@@ -53,20 +53,21 @@ void parseConfig(String conf) {
   //sample config: |1,2|3,4|5,6|450
   int lastDelimiterIndex = 0;
   int delimiterCounter = 0;
-  for (unsigned int i = 1; i < sizeof(conf); i++)
+  for (unsigned int i = 1; i < conf.length(); i++)
   {
     if (String(conf[i]) == "|")
     {
       String valPair = conf.substring(lastDelimiterIndex+1, i);
       log("valPair " + valPair);
-      for (unsigned ii = 0; ii < sizeof(valPair); ii++)
+      for (unsigned int ii = 0; ii < valPair.length(); ii++)
       {
-        if (String(conf[ii]) == ",")
+        // log("debug: " + String(valPair[ii]));
+        if (String(valPair[ii]) == ",")
         {
-          int firstVal = conf.substring(0, ii-1).toInt();
-          int secondVal = conf.substring(ii, sizeof(valPair)).toInt();
-          log("firstVal " + conf.substring(0, ii-1));
-          log("secondVal " + conf.substring(ii, sizeof(valPair)));
+          int firstVal = valPair.substring(0, ii).toInt();
+          int secondVal = valPair.substring(ii+1, valPair.length()).toInt();
+          log("firstVal " + valPair.substring(0, ii));
+          log("secondVal " + valPair.substring(ii+1, valPair.length()));
           moves[delimiterCounter][0] = firstVal;
           moves[delimiterCounter][1] = secondVal;
         }
@@ -83,12 +84,12 @@ void parseConfig(String conf) {
 
   bool test = true;
   //get last value for movesPerMinute value
-  for (unsigned int i = sizeof(conf); i >= 0; i--)
+  for (int i = conf.length(); i >= 0; i--)
   {
     if (String(conf[i]) == "|" && test)
     {
       test = false;
-      movesPerMinute = conf.substring(i, sizeof(conf)).toInt();
+      movesPerMinute = conf.substring(i+1, conf.length()).toInt();
       log("movesPerMinute " + String(movesPerMinute));
     }
   }

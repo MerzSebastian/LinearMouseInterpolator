@@ -21,7 +21,7 @@ while True:
         state_right = new_state_right
         if new_state_right < 0:
             print("Stop recording!")
-            break;
+            break
     time.sleep(0.001)
     
 #print("recorded positions: " + str(results))
@@ -31,4 +31,8 @@ for i in range(1, len(results)):
     realtiveResults.append([results[i-1][0]-results[i][0], results[i-1][1]-results[i][1]])
     
 #print("relative positions: " + str(realtiveResults))
-print("Result: {{0, 0}, " + str(realtiveResults).replace("[", "{").replace("]", "}")[1:])
+#print("Result: {{0, 0}, " + str(realtiveResults).replace("[", "{").replace("]", "}")[1:])
+sdCardResult = str(realtiveResults).replace("[", "|").replace("]", "|").replace(", |", "").replace(", ", ",")
+#print()
+movesPerMinute = input('Please enter movesPerMinute value:')
+print("Result: |0,0" + sdCardResult[1:len(sdCardResult)-1] + movesPerMinute)
