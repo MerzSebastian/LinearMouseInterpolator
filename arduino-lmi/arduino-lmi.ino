@@ -1,11 +1,15 @@
 #include "USBHost_t36.h"
 #include "./coordinates.h"
 #include "./button.h"
+#include <SD.h>
+#include <SPI.h>
 
 USBHost usb_host;
 USBHub hub(usb_host);
 USBHIDParser hid(usb_host);
 MouseController mouse(usb_host);
+File file;
+const int chipSelect = BUILTIN_SDCARD;
 
 #define TX_SIZE 5
 #define RX_SIZE 3
@@ -13,10 +17,11 @@ MouseController mouse(usb_host);
 int8_t tx[TX_SIZE];
 int8_t rx[RX_SIZE];
 
-bool debug = false;
+bool debug = true;
 
 int movesPerMinute = 450;
-int moves[29][2] = {{0,0}, {-7, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40}};
+// will overflow need to somehow track the length and restrict it to the given length
+int moves[500][2] = {{0,0}, {-7, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40},{-20, 40}};
 float movesPerMilliseconds = round(1000 / (movesPerMinute / 60));
 bool mousePressed = false;
 bool shouldReset = true;
@@ -43,10 +48,75 @@ void log(String text) {
   if (debug) { Serial1.println(text); }
 }
 
+//needs refactoring, should be possible in single for statement. works for now. types can be refactored as well.
+void parseConfig(String conf) {
+  //sample config: |1,2|3,4|5,6|450
+  int lastDelimiterIndex = 0;
+  int delimiterCounter = 0;
+  for (unsigned int i = 1; i < sizeof(conf); i++)
+  {
+    if (String(conf[i]) == "|")
+    {
+      String valPair = conf.substring(lastDelimiterIndex+1, i);
+      log("valPair " + valPair);
+      for (unsigned ii = 0; ii < sizeof(valPair); ii++)
+      {
+        if (String(conf[ii]) == ",")
+        {
+          int firstVal = conf.substring(0, ii-1).toInt();
+          int secondVal = conf.substring(ii, sizeof(valPair)).toInt();
+          log("firstVal " + conf.substring(0, ii-1));
+          log("secondVal " + conf.substring(ii, sizeof(valPair)));
+          moves[delimiterCounter][0] = firstVal;
+          moves[delimiterCounter][1] = secondVal;
+        }
+        
+      }
+      delimiterCounter += 1;
+      lastDelimiterIndex = i;
+      
+    }
+    
+  }
+  log("animationTimes " + String(delimiterCounter));
+  animationTimes = delimiterCounter; //set how many moved should be taken from array. maybe this off by 1 -> need to check
+
+  bool test = true;
+  //get last value for movesPerMinute value
+  for (unsigned int i = sizeof(conf); i >= 0; i--)
+  {
+    if (String(conf[i]) == "|" && test)
+    {
+      test = false;
+      movesPerMinute = conf.substring(i, sizeof(conf)).toInt();
+      log("movesPerMinute " + String(movesPerMinute));
+    }
+  }
+  
+}
+
 void setup()
 {
   Serial1.begin(115200);
   usb_host.begin();
+  while (!Serial1) { ; }
+  
+  if (!SD.begin(chipSelect)) {
+    log("sd card initialization failed!");
+    return;
+  }
+  log("sd card initialization done.");
+  file = SD.open("config.txt");
+  if (file) {
+    while (file.available()) {
+      String data = file.readString();
+      parseConfig(data);
+      log(data);
+    }
+    file.close();
+  } else {
+    log("error opening config.txt");
+  }
 }
 
 void loop()
