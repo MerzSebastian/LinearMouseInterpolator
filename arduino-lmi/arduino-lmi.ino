@@ -14,7 +14,7 @@ MouseController mouse(usb_host);
 File file;
 
 const int cs = BUILTIN_SDCARD;
-const bool debug = true;
+const bool debug = false;
 
 int8_t tx[TX_SIZE];
 int8_t rx[RX_SIZE];
