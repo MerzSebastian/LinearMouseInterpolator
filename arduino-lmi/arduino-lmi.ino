@@ -97,11 +97,13 @@ void setup() {
     }
     log("sd card initialization done.");
     file = SD.open("config.txt");
+    String result = "";
     if (file) {
         while (file.available()) {
-            parseConfig(file.readString());
+          result += file.readString();
         }
         file.close();
+        parseConfig(result);
     } else {
         log("error opening config.txt");
     }
