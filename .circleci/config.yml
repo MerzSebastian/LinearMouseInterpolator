@@ -88,3 +88,6 @@ workflows:
           requires:
             - compile-arduino
             - compile-recorder
+          filters:
+            branches:
+              only: main
