@@ -20,8 +20,7 @@ jobs:
           name: compile
           command: |
             export PATH=$PATH:/root/project/bin
-            arduino-cli board details -b teensy:avr:teensy41
-            arduino-cli compile -b teensy:avr:teensy41:usb=serial+keyboard+mouse+joystick --output-dir /root/project/binaries arduino-lmi
+            arduino-cli compile -b teensy:avr:teensy41:usb=serialhid --output-dir /root/project/binaries arduino-lmi
       - persist_to_workspace:
           root: .
           paths: binaries
