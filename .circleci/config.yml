@@ -17,8 +17,7 @@ jobs:
           name: "Compile windows executable"
           shell: powershell.exe
           command: |
-            cd src
-            pyinstaller decode.py --onefile
+            pyinstaller win32api-record-coordinates.py --onefile
       - persist_to_workspace:
           root: ./
           paths:
