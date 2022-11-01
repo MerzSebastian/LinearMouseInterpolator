@@ -24,7 +24,7 @@ jobs:
       - persist_to_workspace:
           root: ./
           paths:
-            - src/dist/
+            - dist/
   compile-arduino:
     docker:
       - image: ubuntu:20.04
@@ -73,7 +73,7 @@ jobs:
             then
               export NOTES=$(grep -ozP '(## \['${NEW_VERSION}'\])([\S\s]*?)(?=## \[)' CHANGELOG.md)
               echo $NOTES
-              mkdir release && mv binaries/ release/ && mv src\dist\recorder.exe release/
+              mkdir release && mv binaries/ release/ && mv dist/win32api-record-coordinates.exe release/recorder.exe
               cd release && zip -r release.zip .
               gh release create ${NEW_VERSION} release.zip --notes "${NOTES}"
             fi
