@@ -1,6 +1,28 @@
 version: 2.1
 
 jobs:
+  build-recorder:
+    executor:
+      name: win/default
+      shell: powershell.exe
+    steps:
+      - checkout
+      - run:
+          name: "Upgrade pip & Install requirements"
+          shell: powershell.exe
+          command: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+      - run:
+          name: "Compile windows executable"
+          shell: powershell.exe
+          command: |
+            cd src
+            pyinstaller decode.py --onefile
+      - persist_to_workspace:
+          root: ./
+          paths:
+            - src/dist/
   compile-arduino:
     docker:
       - image: ubuntu:20.04
@@ -49,7 +71,8 @@ jobs:
             then
               export NOTES=$(grep -ozP '(## \['${NEW_VERSION}'\])([\S\s]*?)(?=## \[)' CHANGELOG.md)
               echo $NOTES
-              zip -r release.zip binaries
+              mkdir release && mv binaries/ release/ && mv src\dist\recorder.exe release/
+              cd release && zip -r release.zip .
               gh release create ${NEW_VERSION} release.zip --notes "${NOTES}"
             fi
 
@@ -57,7 +80,9 @@ jobs:
 workflows:
   release:
     jobs:
+      - build-recorder
       - compile-arduino
       - release:
           requires:
             - compile-arduino
+            - build-recorder
