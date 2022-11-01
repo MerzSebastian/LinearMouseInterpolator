@@ -20,11 +20,11 @@ jobs:
           name: compile
           command: |
             export PATH=$PATH:/root/project/bin
-            arduino-cli compile -b teensy:avr:teensy41 --output-dir /root/project/compiled arduino-lmi
+            arduino-cli compile -b teensy:avr:teensy41:usb=mouse --output-dir /root/project/binaries arduino-lmi
       - persist_to_workspace:
           root: .
-          paths: compiled
-  upload-nightly:
+          paths: binaries
+  release:
     docker:
       - image: ubuntu:20.04
     steps:
@@ -44,20 +44,21 @@ jobs:
       - run:
           name: zip it and ship it
           command: |
-            export NEW_VERSION=$( \
-            curl -L https://github.com/MerzSebastian/LinearMouseInterpolator/releases/latest | \
-            grep -oP '(?<=releases/tag/).*?(?=" />)' | \
-            head -1 | \
-            awk -F. -v OFS=. '{$2 += 1 ; print}')
-            apt install -y zip
-            cd compiled && zip -r binaries.zip *
-            gh release create ${NEW_VERSION} binaries.zip --notes "Nightly version - potentially unstable"
+            export NEW_VERSION=$(grep -oP '\[[0-9]\.[0-9]\.[0-9]\](?![\s\S]*\[[0-9]\.[0-9]\.[0-9]\])' CHANGELOG.md | tail -c +2 | head -c -2)
+            echo $NEW_VERSION
+            if [[ $(curl -s -w "%{http_code}" https://github.com/MerzSebastian/LinearMouseInterpolator/releases/tag/${NEW_VERSION}) = "Not Found404" ]]
+            then
+              export NOTES=$(grep -ozP '(## \['${NEW_VERSION}'\])([\S\s]*?)(?=## \[)' CHANGELOG.md)
+              echo $NOTES
+              zip -r release.zip binaries
+              gh release create ${NEW_VERSION} AutoTabGroup.zip --notes "${NOTES}"
+            fi
 
             
 workflows:
   compile:
     jobs:
       - compile
-      - upload-nightly:
+      - release:
           requires:
             - compile
