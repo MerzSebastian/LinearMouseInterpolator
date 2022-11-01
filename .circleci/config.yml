@@ -1,7 +1,31 @@
 version: 2.1
 
+orbs:
+  win: circleci/windows@2.2.0
+
 jobs:
-  compile:
+  compile-recorder:
+    executor:
+      name: win/default
+      shell: powershell.exe
+    steps:
+      - checkout
+      - run:
+          name: "Upgrade pip & Install requirements"
+          shell: powershell.exe
+          command: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+      - run:
+          name: "Compile windows executable"
+          shell: powershell.exe
+          command: |
+            pyinstaller win32api-record-coordinates.py --onefile
+      - persist_to_workspace:
+          root: ./
+          paths:
+            - dist/
+  compile-arduino:
     docker:
       - image: ubuntu:20.04
     steps:
@@ -20,11 +44,11 @@ jobs:
           name: compile
           command: |
             export PATH=$PATH:/root/project/bin
-            arduino-cli compile -b teensy:avr:teensy41 --output-dir /root/project/compiled arduino-lmi
+            arduino-cli compile -b teensy:avr:teensy41:usb=serialhid --output-dir /root/project/binaries arduino-lmi
       - persist_to_workspace:
           root: .
-          paths: compiled
-  upload-nightly:
+          paths: binaries
+  release:
     docker:
       - image: ubuntu:20.04
     steps:
@@ -32,7 +56,7 @@ jobs:
       - attach_workspace:
           at: .
       - run:
-          name: install github cli
+          name: install github cli + zip
           command: |
             apt update
             apt install -y curl
@@ -40,24 +64,30 @@ jobs:
             && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
             && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
             && apt update \
-            && apt install gh -y
+            && apt install gh zip -y
       - run:
           name: zip it and ship it
           command: |
-            export NEW_VERSION=$( \
-            curl -L https://github.com/MerzSebastian/LinearMouseInterpolator/releases/latest | \
-            grep -oP '(?<=releases/tag/).*?(?=" />)' | \
-            head -1 | \
-            awk -F. -v OFS=. '{$2 += 1 ; print}')
-            apt install -y zip
-            cd compiled && zip -r binaries.zip *
-            gh release create ${NEW_VERSION} binaries.zip --notes "Nightly version - potentially unstable"
+            export NEW_VERSION=$(grep -oP '\[[0-9]\.[0-9]\.[0-9]\](?![\s\S]*\[[0-9]\.[0-9]\.[0-9]\])' CHANGELOG.md | tail -c +2 | head -c -2)
+            if [[ $(curl -s -w "%{http_code}" https://github.com/MerzSebastian/LinearMouseInterpolator/releases/tag/${NEW_VERSION}) = "Not Found404" ]]
+            then
+              export NOTES=$(grep -ozP '(## \['${NEW_VERSION}'\])([\S\s]*?)(?=## \[)' CHANGELOG.md)
+              echo $NOTES
+              mkdir release && mv binaries/ release/ && mv dist/win32api-record-coordinates.exe release/recorder.exe
+              cd release && zip -r release.zip .
+              gh release create ${NEW_VERSION} release.zip --notes "${NOTES}"
+            fi
 
             
 workflows:
-  compile:
+  release:
     jobs:
-      - compile
-      - upload-nightly:
+      - compile-recorder
+      - compile-arduino
+      - release:
           requires:
-            - compile
+            - compile-arduino
+            - compile-recorder
+          filters:
+            branches:
+              only: main
