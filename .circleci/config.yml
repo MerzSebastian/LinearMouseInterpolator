@@ -4,18 +4,12 @@ orbs:
   win: circleci/windows@2.2.0
 
 jobs:
-  build-recorder:
+  compile-recorder:
     executor:
       name: win/default
       shell: powershell.exe
     steps:
       - checkout
-      - run:
-          name: "Upgrade pip & Install requirements"
-          shell: powershell.exe
-          command: |
-            python -m pip install --upgrade pip
-            pip install -r requirements.txt
       - run:
           name: "Compile windows executable"
           shell: powershell.exe
@@ -82,9 +76,9 @@ jobs:
 workflows:
   release:
     jobs:
-      - build-recorder
+      - compile-recorder
       - compile-arduino
       - release:
           requires:
             - compile-arduino
-            - build-recorder
+            - compile-recorder
